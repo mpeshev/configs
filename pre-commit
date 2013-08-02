@@ -1,0 +1,37 @@
+#!/bin/sh
+ 
+if git diff --cached | grep "debugger"
+then
+   echo -e "\e[1;34mdebugger statement found in the diff\e[0m"
+fi
+
+if git diff --cached | grep "var_dump"
+then
+   echo -e "\e[1;34mvar_dump found in the commit\e[0m"
+fi
+
+commit_oneline=`git diff --cached | grep "^+" | grep -v "+++"`
+
+oparbr=`echo $commit_oneline | grep -o "(" | wc -l`
+cparbr=`echo $commit_oneline | grep -o ")" | wc -l`
+ocurbr=`echo $commit_oneline | grep -o "{" | wc -l`
+ccurbr=`echo $commit_oneline | grep -o "}" | wc -l`
+osqbr=`echo $commit_oneline | grep -o "\[" | wc -l`
+csqbr=`echo $commit_oneline | grep -o "\]" | wc -l`
+
+if (( $oparbr != $cparbr ))
+then
+   echo -e "\e[1;34mopen parenthesis brackets don't match closing parenthesis\e[0m"
+fi
+
+if (( $ocurbr != $ccurbr ))
+then
+   echo -e "\e[1;34mopen curly brackets don't match closing curly\e[0m"
+fi
+
+if (( $osqbr != $csqbr ))
+then
+   echo -e "\e[1;34mopen square brackets don't match closing square\e[0m"
+fi
+
+exit

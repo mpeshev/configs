@@ -7,5 +7,5 @@ alias gista="git status"
 alias gchs="git checkout staging"
 alias gchm="git checkout master"
 alias gadd="git add"
-alias gommit="git commit -m"
+alias gommit="sh ~/git-aliased-hooks/pre-commit && git commit -m"
 
