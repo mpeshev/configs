@@ -1,0 +1,7 @@
+# My server .bash_profile for nginx and WP shortcuts
+
+alias nginx_reset='/etc/init.d/nginx restart'
+alias edit_wp_config='vim /etc/nginx/sites-available/wordpress'
+alias goto_wp='cd /var/www'
+alias see_errors='tail /var/log/nginx/error.log'
+
