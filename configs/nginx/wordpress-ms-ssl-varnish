@@ -1,0 +1,140 @@
+server {
+	listen 8080;
+        # listen 127.0.0.1:8080 default_server;
+        # listen [::]:80 default_server ipv6only=on;
+
+        root /var/www/public_html;
+        #index index.php index.html index.htm;
+
+        # Make site accessible from http://localhost/
+        server_name localhost;
+
+	client_max_body_size 32M;
+
+        location / {
+                # First attempt to serve request as file, then
+                # as directory, then fall back to displaying a 404.
+                index index.html index.htm index.php;
+                try_files $uri $uri/ /index.php /index.html;
+                # Uncomment to enable naxsi on this location
+                # include /etc/nginx/naxsi.rules
+        }
+
+        location /doc/ {
+                alias /usr/share/doc/;
+                autoindex on;
+                allow 127.0.0.1;
+                allow ::1;
+                deny all;
+        }
+
+	# PHP My Admin (in case you have it)
+        #
+        location /pma {
+                root /var/www/phpMyAdmin/;
+                try_files $uri $uri/ /index.php;
+        }
+
+        location ~ ^/pma(.*)$ {
+                alias /var/www/phpMyAdmin$1;
+                fastcgi_pass unix:/var/run/php5-fpm.sock; #varies on different Linux flavours
+                fastcgi_index index.php;
+                fastcgi_param SCRIPT_FILENAME /var/www/phpMyAdmin$1;
+                include fastcgi_params;
+        }
+
+        if (!-e $request_filename)
+        {
+		rewrite ^/[_0-9a-zA-Z-]+(/wp-.*) $1 last;
+		rewrite ^/[_0-9a-zA-Z-]+.*(/wp-admin/.*\.php)$ $1 last;
+    		rewrite ^/[_0-9a-zA-Z-]+(/.*\.php)$ $1 last;
+                rewrite ^(.+)$ /index.php?q=$1 last;
+        }
+
+        rewrite /wp-admin$ $scheme://$host$uri/ permanent;
+
+        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+        #
+        location ~ \.php$ {
+                fastcgi_split_path_info ^(.+\.php)(/.+)$;
+                # NOTE: You should have "cgi.fix_pathinfo = 0;" in php.ini
+                autoindex on;        
+                # With php5-cgi alone:
+                # fastcgi_pass 127.0.0.1:9000;
+                # With php5-fpm:
+                fastcgi_pass unix:/var/run/php5-fpm.sock;
+		fastcgi_pass_header Set-Cookie; # important if you use cookies
+                fastcgi_index index.php;
+                try_files $uri $uri/ /index.php$is_args$args;
+                include fastcgi_params;
+		expires 10m; # longer expiration
+        }
+
+        # deny access to .htaccess files, if Apache's document root
+        # concurs with nginx's one
+        #
+        location ~ /\.ht {
+                deny all;
+        }
+
+        # Directives to send expires headers and turn off 404 error logging.
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico)$ {
+                expires 24h;
+                log_not_found off;
+        }
+
+        location ^~ /blogs.dir {
+                internal;
+                alias /var/www/example.com/htdocs/wp-content/blogs.dir ;
+                access_log off;
+                log_not_found off;
+                expires max;
+        }
+}
+
+
+# HTTPS server
+
+server {
+        listen 443;
+        server_name localhost *.yourdomain.com;
+
+        root /var/www/public_html;
+        index index.php index.html index.htm;
+
+        ssl on;
+        ssl_certificate /etc/nginx/ssl/server.crt;
+        ssl_certificate_key /etc/nginx/ssl/server.key;
+
+        ssl_session_timeout 5m;
+
+        ssl_protocols SSLv3 TLSv1;
+        ssl_ciphers ALL:!ADH:!EXPORT56:RC4+RSA:+HIGH:+MEDIUM:+LOW:+SSLv3:+EXP;
+        ssl_prefer_server_ciphers on;
+
+        location / {
+                try_files $uri $uri/ =404;
+        }
+
+        if (!-e $request_filename)
+        {
+		rewrite ^/[_0-9a-zA-Z-]+(/wp-.*) $1 last;
+		rewrite ^/[_0-9a-zA-Z-]+.*(/wp-admin/.*\.php)$ $1 last;
+    		rewrite ^/[_0-9a-zA-Z-]+(/.*\.php)$ $1 last;
+                rewrite ^(.+)$ /index.php?q=$1 last;
+        }
+        
+        location ~ \.php$ {
+                fastcgi_split_path_info ^(.+\.php)(/.+)$;
+                # NOTE: You should have "cgi.fix_pathinfo = 0;" in php.ini
+                autoindex on;
+                # With php5-cgi alone:
+                # fastcgi_pass 127.0.0.1:9000;
+                # With php5-fpm:
+                fastcgi_pass unix:/var/run/php5-fpm.sock;
+                fastcgi_index index.php;
+                try_files $uri $uri/ /index.php$is_args$args;
+		fastcgi_pass_header Set-Cookie;
+                include fastcgi_params;
+        }
+}
